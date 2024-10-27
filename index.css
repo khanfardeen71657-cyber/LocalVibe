@@ -111,7 +111,9 @@ border-bottom: 5px solid white;
   font-weight: 700;
 }
 
-.category-items{
+.category-items, .items-container{
+  width: 80%;
+  margin: 50px;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-evenly;
