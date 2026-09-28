@@ -57,7 +57,7 @@ export default function CreateEvent() {
         description: form.description,
         image: form.image,
         category: form.category,
-        price: Number(form.price),
+        price: Number(form.price) || 0,
         address: {
           street: form.street,
           city: form.city,
@@ -65,18 +65,19 @@ export default function CreateEvent() {
           zip: form.zip,
           country: form.country
         },
-        lng: coords.lng,
-        lat: coords.lat,
-        total_seats: Number(form.total_seats),
+        lng: Number(coords.lng),
+        lat: Number(coords.lat),
+        total_seats: Number(form.total_seats) || 1,
         status: form.status,
         type: form.type,
-        startsAt: form.startsAt,
-        endsAt: form.endsAt
+        startsAt: form.startsAt ? new Date(form.startsAt).toISOString() : undefined,
+        endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : undefined
       }
       const data = await api.createEvent(payload)
       navigate(`/events/${data.event._id}`)
     } catch (err) {
       setError(err.message)
+      console.error('Create event error:', err)
     } finally {
       setBusy(false)
     }
