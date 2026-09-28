@@ -18,7 +18,9 @@ export default function CreateEvent() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+  function set(key, value) {
+    setForm(f => ({ ...f, [key]: value }))
+  }
 
   function handleAddressSelect(place) {
     setForm(f => ({
@@ -29,13 +31,13 @@ export default function CreateEvent() {
       zip:     place.zip     || f.zip,
       country: place.country || f.country
     }))
-    setCoords({ lat: place.lat, lng: place.lng })
+    setCoords({ lat: Number(place.lat), lng: Number(place.lng) })
   }
 
   async function useMyLocation() {
     try {
       const pos = await getCurrentPosition()
-      setCoords(pos)
+      setCoords({ lat: Number(pos.lat), lng: Number(pos.lng) })
     } catch {
       setError('Could not get your location')
     }
@@ -46,38 +48,44 @@ export default function CreateEvent() {
     setError('')
 
     if (!coords) {
-      setError('Select an address or use your location first')
+      setError('Please pick an address or use your current location first')
+      return
+    }
+
+    if (!form.name.trim()) {
+      setError('Event name is required')
       return
     }
 
     setBusy(true)
     try {
       const payload = {
-        name: form.name,
-        description: form.description,
-        image: form.image,
+        name: form.name.trim(),
+        description: form.description.trim(),
+        image: form.image.trim(),
         category: form.category,
         price: Number(form.price) || 0,
         address: {
-          street: form.street,
-          city: form.city,
-          state: form.state,
-          zip: form.zip,
-          country: form.country
+          street: form.street.trim(),
+          city: form.city.trim(),
+          state: form.state.trim(),
+          zip: form.zip.trim(),
+          country: form.country.trim() || 'India'
         },
         lng: Number(coords.lng),
         lat: Number(coords.lat),
         total_seats: Number(form.total_seats) || 1,
         status: form.status,
-        type: form.type,
+        type: form.type.trim(),
         startsAt: form.startsAt ? new Date(form.startsAt).toISOString() : undefined,
         endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : undefined
       }
+
       const data = await api.createEvent(payload)
       navigate(`/events/${data.event._id}`)
     } catch (err) {
-      setError(err.message)
       console.error('Create event error:', err)
+      setError(err.message || 'Failed to create event')
     } finally {
       setBusy(false)
     }
@@ -89,27 +97,44 @@ export default function CreateEvent() {
       <p className="subtitle">Give it a name, a place, and a time. Then invite your city.</p>
 
       <form onSubmit={submit}>
+        {/* Event name */}
         <div>
           <label>Event name</label>
-          <input placeholder="Rooftop jazz night" value={form.name}
-            onChange={e => set('name', e.target.value)} required />
+          <input
+            placeholder="Rooftop jazz night"
+            value={form.name}
+            onChange={e => set('name', e.target.value)}
+            required
+          />
         </div>
 
+        {/* Cover image */}
         <div>
-          <label>Cover image URL</label>
-          <input placeholder="https://images.unsplash.com/..." value={form.image}
-            onChange={e => set('image', e.target.value)} />
+          <label>Cover image URL (optional)</label>
+          <input
+            placeholder="https://images.unsplash.com/..."
+            value={form.image}
+            onChange={e => set('image', e.target.value)}
+          />
           {form.image && (
-            <div className="image-preview" style={{ backgroundImage: `url(${form.image})` }} />
+            <div
+              className="image-preview"
+              style={{ backgroundImage: `url(${form.image})` }}
+            />
           )}
         </div>
 
+        {/* Description */}
         <div>
           <label>Description</label>
-          <textarea placeholder="Tell people what to expect…" value={form.description}
-            onChange={e => set('description', e.target.value)} />
+          <textarea
+            placeholder="Tell people what to expect…"
+            value={form.description}
+            onChange={e => set('description', e.target.value)}
+          />
         </div>
 
+        {/* Address autocomplete */}
         <div>
           <label>Address (autocomplete)</label>
           <AddressAutocomplete onSelect={handleAddressSelect} />
@@ -120,88 +145,142 @@ export default function CreateEvent() {
           )}
         </div>
 
+        {/* Street + City */}
         <div className="row">
           <div style={{ flex: 2 }}>
             <label>Street</label>
-            <input value={form.street} onChange={e => set('street', e.target.value)} />
+            <input
+              value={form.street}
+              onChange={e => set('street', e.target.value)}
+            />
           </div>
           <div style={{ flex: 1 }}>
             <label>City</label>
-            <input value={form.city} onChange={e => set('city', e.target.value)} />
+            <input
+              value={form.city}
+              onChange={e => set('city', e.target.value)}
+            />
           </div>
         </div>
 
+        {/* State + PIN + Country */}
         <div className="row">
           <div style={{ flex: 1 }}>
             <label>State</label>
-            <input value={form.state} onChange={e => set('state', e.target.value)} />
+            <input
+              value={form.state}
+              onChange={e => set('state', e.target.value)}
+            />
           </div>
           <div style={{ flex: 1 }}>
             <label>PIN</label>
-            <input value={form.zip} onChange={e => set('zip', e.target.value)} />
+            <input
+              value={form.zip}
+              onChange={e => set('zip', e.target.value)}
+            />
           </div>
           <div style={{ flex: 2 }}>
             <label>Country</label>
-            <input value={form.country} onChange={e => set('country', e.target.value)} />
+            <input
+              value={form.country}
+              onChange={e => set('country', e.target.value)}
+            />
           </div>
         </div>
 
+        {/* Use current location */}
         <div>
           <label>Or use current location</label>
-          <button type="button" className="secondary" onClick={useMyLocation}>
-            {coords ? `✓ ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}` : 'Use my current location'}
+          <button
+            type="button"
+            className="secondary"
+            onClick={useMyLocation}
+          >
+            {coords
+              ? `✓ ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
+              : 'Use my current location'}
           </button>
         </div>
 
+        {/* Category + Price + Seats */}
         <div className="row">
           <div style={{ flex: 1 }}>
             <label>Category</label>
-            <select value={form.category} onChange={e => set('category', e.target.value)}>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            <select
+              value={form.category}
+              onChange={e => set('category', e.target.value)}
+            >
+              {CATEGORIES.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
           </div>
           <div style={{ flex: 1 }}>
             <label>Price (₹)</label>
-            <input type="number" min="0" value={form.price}
-              onChange={e => set('price', e.target.value)} />
+            <input
+              type="number"
+              min="0"
+              value={form.price}
+              onChange={e => set('price', e.target.value)}
+            />
           </div>
           <div style={{ flex: 1 }}>
             <label>Total seats</label>
-            <input type="number" min="1" value={form.total_seats}
-              onChange={e => set('total_seats', e.target.value)} />
+            <input
+              type="number"
+              min="1"
+              value={form.total_seats}
+              onChange={e => set('total_seats', e.target.value)}
+            />
           </div>
         </div>
 
+        {/* Status + Type */}
         <div className="row">
           <div style={{ flex: 1 }}>
             <label>Status</label>
-            <select value={form.status} onChange={e => set('status', e.target.value)}>
+            <select
+              value={form.status}
+              onChange={e => set('status', e.target.value)}
+            >
               <option value="offline">Offline</option>
               <option value="online">Online</option>
             </select>
           </div>
           <div style={{ flex: 1 }}>
-            <label>Type</label>
-            <input placeholder="music, sports…" value={form.type}
-              onChange={e => set('type', e.target.value)} />
+            <label>Type (optional)</label>
+            <input
+              placeholder="music, sports…"
+              value={form.type}
+              onChange={e => set('type', e.target.value)}
+            />
           </div>
         </div>
 
+        {/* Starts + Ends */}
         <div className="row">
           <div style={{ flex: 1 }}>
             <label>Starts</label>
-            <input type="datetime-local" value={form.startsAt}
-              onChange={e => set('startsAt', e.target.value)} />
+            <input
+              type="datetime-local"
+              value={form.startsAt}
+              onChange={e => set('startsAt', e.target.value)}
+            />
           </div>
           <div style={{ flex: 1 }}>
             <label>Ends</label>
-            <input type="datetime-local" value={form.endsAt}
-              onChange={e => set('endsAt', e.target.value)} />
+            <input
+              type="datetime-local"
+              value={form.endsAt}
+              onChange={e => set('endsAt', e.target.value)}
+            />
           </div>
         </div>
 
+        {/* Error */}
         {error && <p className="error">{error}</p>}
 
+        {/* Submit */}
         <button disabled={busy} style={{ marginTop: '.5rem' }}>
           {busy ? 'Creating…' : 'Create event'}
         </button>
