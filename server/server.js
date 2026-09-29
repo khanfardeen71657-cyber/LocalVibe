@@ -6,7 +6,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 
 const app = express()
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 app.use(cors({ origin: '*' }))
 
 const expiration = '7d'
@@ -60,7 +60,7 @@ const eventSchema = new mongoose.Schema({
 
 eventSchema.index({ location: '2dsphere' })
 
-// ✅ Mongoose 9 compatible — async function, no next
+// Mongoose 9 compatible — async function, no next
 eventSchema.pre('save', async function () {
   if (this.address) {
     const parts = [
