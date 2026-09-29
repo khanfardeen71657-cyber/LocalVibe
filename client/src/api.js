@@ -31,6 +31,7 @@ export const api = {
   register: (payload) => request('/register', { method: 'POST', body: payload, auth: false }),
   login:    (payload) => request('/login',    { method: 'POST', body: payload, auth: false }),
   me:       ()        => request('/me'),
+  updateMe: (payload) => request('/me', { method: 'PATCH', body: payload }),
   user:     (id)      => request(`/user/${id}`, { auth: false }),
 
   searchUsers: (q) => request(`/users/search?q=${encodeURIComponent(q)}`),
@@ -42,8 +43,7 @@ export const api = {
   getEvent:    (id)      => request(`/events/${id}`, { auth: false }),
   updateEvent: (id, payload) => request(`/events/${id}`, { method: 'PATCH', body: payload }),
   deleteEvent: (id)      => request(`/events/${id}`, { method: 'DELETE' }),
-  featureEvent:(id, isFeatured) =>
-    request(`/events/${id}/feature`, { method: 'PATCH', body: { isFeatured } }),
+  featureEvent:(id, isFeatured) => request(`/events/${id}/feature`, { method: 'PATCH', body: { isFeatured } }),
   joinEvent:   (id)      => request(`/events/${id}/join`, { method: 'POST' }),
   interestedEvent: (id)  => request(`/events/${id}/interested`, { method: 'POST' }),
   exitEvent:   (id)      => request(`/events/${id}/exit`, { method: 'POST' }),

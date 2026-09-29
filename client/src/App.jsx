@@ -18,18 +18,10 @@ function Nav() {
   const { pathname } = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // Close menu on route change
-  useEffect(() => {
-    setMenuOpen(false)
-  }, [pathname])
+  useEffect(() => { setMenuOpen(false) }, [pathname])
 
-  // Lock body scroll when menu is open
   useEffect(() => {
-    if (menuOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
+    document.body.style.overflow = menuOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [menuOpen])
 
@@ -50,7 +42,6 @@ function Nav() {
 
         {user && (
           <>
-            {/* Desktop links */}
             <div className="nav-links nav-links-desktop">
               {link('/', 'Feed')}
               {link('/nearby', 'Nearby')}
@@ -59,7 +50,6 @@ function Nav() {
               {link('/create', '+ Create')}
             </div>
 
-            {/* Desktop user section */}
             <div className="nav-user nav-user-desktop">
               <Link to={`/user/${user._id}`} className="nav-avatar-link">
                 <Avatar name={user.username} src={user.avatar} size={32} />
@@ -67,12 +57,9 @@ function Nav() {
               <Link to={`/user/${user._id}`} className="muted nav-username">
                 @{user.username}
               </Link>
-              <button className="ghost" onClick={handleLogout}>
-                Log out
-              </button>
+              <button className="ghost" onClick={handleLogout}>Log out</button>
             </div>
 
-            {/* Mobile: avatar + hamburger */}
             <div className="nav-mobile">
               <Link to={`/user/${user._id}`} className="nav-avatar-link">
                 <Avatar name={user.username} src={user.avatar} size={30} />
@@ -81,18 +68,14 @@ function Nav() {
                 className={`hamburger ${menuOpen ? 'open' : ''}`}
                 onClick={() => setMenuOpen(v => !v)}
                 aria-label="Menu"
-                aria-expanded={menuOpen}
               >
-                <span></span>
-                <span></span>
-                <span></span>
+                <span /><span /><span />
               </button>
             </div>
           </>
         )}
       </nav>
 
-      {/* Mobile menu overlay */}
       {user && menuOpen && (
         <>
           <div className="mobile-menu-backdrop" onClick={() => setMenuOpen(false)} />
@@ -101,12 +84,9 @@ function Nav() {
               <Avatar name={user.username} src={user.avatar} size={44} />
               <div>
                 <div className="mobile-menu-username">@{user.username}</div>
-                <Link to={`/user/${user._id}`} className="mobile-menu-sub">
-                  View profile
-                </Link>
+                <Link to={`/user/${user._id}`} className="mobile-menu-sub">View profile</Link>
               </div>
             </div>
-
             <div className="mobile-menu-links">
               {link('/', 'Feed')}
               {link('/nearby', 'Nearby')}
@@ -114,10 +94,7 @@ function Nav() {
               {link('/search', 'Find people')}
               {link('/create', '+ Create event')}
             </div>
-
-            <button className="mobile-menu-logout" onClick={handleLogout}>
-              Log out
-            </button>
+            <button className="mobile-menu-logout" onClick={handleLogout}>Log out</button>
           </div>
         </>
       )}

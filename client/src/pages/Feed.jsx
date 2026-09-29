@@ -42,10 +42,7 @@ function EventCard({ ev }) {
           ? <span className="badge paid alert">Paid</span>
           : <span className="badge free alert">Free</span>}
         {ev.isFeatured && (
-          <span
-            className="badge alert"
-            style={{ left: 'auto', right: 12, background: '#fbbf24', color: '#451a03' }}
-          >
+          <span className="badge alert" style={{ left: 'auto', right: 12, background: '#fbbf24', color: '#451a03' }}>
             ★ Featured
           </span>
         )}
@@ -83,7 +80,6 @@ export default function Feed() {
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
 
-    // recommendations are best-effort
     getCurrentPosition()
       .then(pos => api.recommended(pos.lng, pos.lat))
       .then(d => {
@@ -115,7 +111,7 @@ export default function Feed() {
         <div className="empty">
           <div className="empty-icon">✨</div>
           <p style={{ fontSize: '1.05rem', color: 'var(--text-2)', marginBottom: '.5rem' }}>
-            Nothing here yet
+            Your feed is quiet
           </p>
           <p className="muted">
             <Link to="/search">Follow people</Link> to see what they're up to.

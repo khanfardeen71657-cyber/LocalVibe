@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../AuthContext'
@@ -69,6 +69,8 @@ export default function UserProfile() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
 
   const isMe = me && String(me._id) === String(id)
   const isFollowing = me?.following?.some(u => String(u._id) === String(id))
@@ -106,14 +108,104 @@ export default function UserProfile() {
     }
   }
 
+  // upload profile image
+  function handleAvatarClick() {
+    if (!isMe) return
+    fileInputRef.current?.click()
+  }
+
+  async function handleAvatarFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image too large. Please pick a file under 2 MB.')
+      return
+    }
+
+    setUploading(true)
+    setError('')
+
+    const reader = new FileReader()
+    reader.onload = async (ev) => {
+      try {
+        const base64 = ev.target.result
+        await api.updateMe({ avatar: base64 })
+        await refreshUser()
+        await load()
+      } catch (err) {
+        setError(err.message || 'Could not update avatar')
+      } finally {
+        setUploading(false)
+      }
+    }
+    reader.onerror = () => {
+      setError('Could not read that file')
+      setUploading(false)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  async function removeAvatar() {
+    if (!confirm('Remove your profile picture?')) return
+    setUploading(true)
+    try {
+      await api.updateMe({ avatar: '' })
+      await refreshUser()
+      await load()
+    } catch (err) {
+      setError(err.message || 'Could not remove avatar')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   if (loading) return <div className="page"><p className="muted">Loading profile…</p></div>
-  if (error) return <div className="page"><p className="error">{error}</p></div>
+  if (error && !profile) return <div className="page"><p className="error">{error}</p></div>
   if (!profile) return <div className="page"><p className="muted">User not found.</p></div>
 
   return (
     <div className="page">
       <div className="profile-header">
-        <Avatar name={profile.username} src={profile.avatar} size={72} />
+        <div className="profile-avatar-wrap">
+          <div
+            className={`profile-avatar ${isMe ? 'editable' : ''}`}
+            onClick={handleAvatarClick}
+            title={isMe ? 'Click to change profile picture' : ''}
+          >
+            <Avatar name={profile.username} src={profile.avatar} size={72} />
+
+            {isMe && (
+              <div className="profile-avatar-overlay">
+                {uploading ? '…' : (
+                  <>
+                    <span style={{ fontSize: '18px' }}>📷</span>
+                    <span style={{ fontSize: '10px', marginTop: '2px' }}>Change</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {isMe && profile.avatar && (
+            <button
+              type="button"
+              className="profile-avatar-remove"
+              onClick={removeAvatar}
+              title="Remove photo"
+            >
+              ✕
+            </button>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarFile}
+            style={{ display: 'none' }}
+          />
+        </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1>
@@ -128,7 +220,9 @@ export default function UserProfile() {
           </div>
           {isMe && (
             <p className="muted" style={{ marginTop: 8 }}>
-              This is your profile. Your hosted and joined events appear below.
+              {profile.avatar
+                ? 'Click your photo to change it.'
+                : 'Click the photo to upload one.'}
             </p>
           )}
         </div>
@@ -145,6 +239,8 @@ export default function UserProfile() {
           </div>
         )}
       </div>
+
+      {error && <p className="error">{error}</p>}
 
       <h2 style={{ marginTop: '1rem' }}>Hosted events</h2>
       {profile.eventsHosted.length === 0 ? (

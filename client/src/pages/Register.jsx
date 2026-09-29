@@ -17,7 +17,7 @@ export default function Register() {
     setBusy(true)
     try {
       await register(username, email, password)
-      navigate('/')
+      navigate('/feed')
     } catch (err) {
       setError(err.message)
     } finally {
@@ -27,13 +27,9 @@ export default function Register() {
 
   return (
     <div className="auth-centered">
-      <div className="auth-orb auth-orb-1" />
-      <div className="auth-orb auth-orb-2" />
-      <div className="auth-orb auth-orb-3" />
-
       <div className="auth-card">
         <div className="auth-brand">
-          <span className="brand">LocalVibe</span>
+          <Link to="/" className="brand">LocalVibe</Link>
         </div>
 
         <div className="auth-head">
