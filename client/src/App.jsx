@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthContext'
 import Avatar from './components/Avatar'
@@ -15,37 +16,112 @@ function Nav() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [pathname])
+
+  // Lock body scroll when menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [menuOpen])
 
   const link = (to, label) => (
     <Link to={to} className={pathname === to ? 'active' : ''}>{label}</Link>
   )
 
+  function handleLogout() {
+    setMenuOpen(false)
+    logout()
+    navigate('/login')
+  }
+
   return (
-    <nav className="nav">
-      <Link to="/" className="brand">LocalVibe</Link>
-      {user && (
+    <>
+      <nav className="nav">
+        <Link to="/" className="brand">LocalVibe</Link>
+
+        {user && (
+          <>
+            {/* Desktop links */}
+            <div className="nav-links nav-links-desktop">
+              {link('/', 'Feed')}
+              {link('/nearby', 'Nearby')}
+              {link('/map', 'Map')}
+              {link('/search', 'Find people')}
+              {link('/create', '+ Create')}
+            </div>
+
+            {/* Desktop user section */}
+            <div className="nav-user nav-user-desktop">
+              <Link to={`/user/${user._id}`} className="nav-avatar-link">
+                <Avatar name={user.username} src={user.avatar} size={32} />
+              </Link>
+              <Link to={`/user/${user._id}`} className="muted nav-username">
+                @{user.username}
+              </Link>
+              <button className="ghost" onClick={handleLogout}>
+                Log out
+              </button>
+            </div>
+
+            {/* Mobile: avatar + hamburger */}
+            <div className="nav-mobile">
+              <Link to={`/user/${user._id}`} className="nav-avatar-link">
+                <Avatar name={user.username} src={user.avatar} size={30} />
+              </Link>
+              <button
+                className={`hamburger ${menuOpen ? 'open' : ''}`}
+                onClick={() => setMenuOpen(v => !v)}
+                aria-label="Menu"
+                aria-expanded={menuOpen}
+              >
+                <span></span>
+                <span></span>
+                <span></span>
+              </button>
+            </div>
+          </>
+        )}
+      </nav>
+
+      {/* Mobile menu overlay */}
+      {user && menuOpen && (
         <>
-          <div className="nav-links">
-            {link('/', 'Feed')}
-            {link('/nearby', 'Nearby')}
-            {link('/map', 'Map')}
-            {link('/search', 'Find people')}
-            {link('/create', '+ Create')}
-          </div>
-          <div className="nav-user">
-            <Link to={`/user/${user._id}`} className="nav-avatar-link">
-              <Avatar name={user.username} src={user.avatar} size={32} />
-            </Link>
-            <Link to={`/user/${user._id}`} className="muted nav-username">
-              @{user.username}
-            </Link>
-            <button className="ghost" onClick={() => { logout(); navigate('/login') }}>
+          <div className="mobile-menu-backdrop" onClick={() => setMenuOpen(false)} />
+          <div className="mobile-menu">
+            <div className="mobile-menu-user">
+              <Avatar name={user.username} src={user.avatar} size={44} />
+              <div>
+                <div className="mobile-menu-username">@{user.username}</div>
+                <Link to={`/user/${user._id}`} className="mobile-menu-sub">
+                  View profile
+                </Link>
+              </div>
+            </div>
+
+            <div className="mobile-menu-links">
+              {link('/', 'Feed')}
+              {link('/nearby', 'Nearby')}
+              {link('/map', 'Map')}
+              {link('/search', 'Find people')}
+              {link('/create', '+ Create event')}
+            </div>
+
+            <button className="mobile-menu-logout" onClick={handleLogout}>
               Log out
             </button>
           </div>
         </>
       )}
-    </nav>
+    </>
   )
 }
 

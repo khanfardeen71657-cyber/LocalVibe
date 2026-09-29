@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, getCurrentPosition } from '../api'
 import AddressAutocomplete from '../components/AddressAutocomplete'
@@ -7,12 +7,23 @@ const CATEGORIES = ['music', 'sports', 'food', 'art', 'tech', 'community', 'othe
 
 export default function CreateEvent() {
   const navigate = useNavigate()
+  const fileInputRef = useRef(null)
   const [form, setForm] = useState({
-    name: '', description: '', image: '',
-    category: 'other', price: 0,
-    street: '', city: '', state: '', zip: '', country: 'India',
-    total_seats: 10, status: 'offline', type: '',
-    startsAt: '', endsAt: ''
+    name: '',
+    description: '',
+    image: '',
+    category: 'other',
+    price: 0,
+    street: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'India',
+    total_seats: 10,
+    status: 'offline',
+    type: '',
+    startsAt: '',
+    endsAt: ''
   })
   const [coords, setCoords] = useState(null)
   const [error, setError] = useState('')
@@ -20,6 +31,31 @@ export default function CreateEvent() {
 
   function set(key, value) {
     setForm(f => ({ ...f, [key]: value }))
+  }
+
+  // convert selected file to base64 data URL
+  function handleImageFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // size limit: 2 MB
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image too large. Please pick a file under 2 MB.')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      set('image', ev.target.result)   // base64 data URL
+      setError('')
+    }
+    reader.onerror = () => setError('Could not read that file')
+    reader.readAsDataURL(file)
+  }
+
+  function clearImage() {
+    set('image', '')
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   function handleAddressSelect(place) {
@@ -51,7 +87,6 @@ export default function CreateEvent() {
       setError('Please pick an address or use your current location first')
       return
     }
-
     if (!form.name.trim()) {
       setError('Event name is required')
       return
@@ -62,7 +97,7 @@ export default function CreateEvent() {
       const payload = {
         name: form.name.trim(),
         description: form.description.trim(),
-        image: form.image.trim(),
+        image: form.image || '',       // base64 data URL or empty
         category: form.category,
         price: Number(form.price) || 0,
         address: {
@@ -108,20 +143,76 @@ export default function CreateEvent() {
           />
         </div>
 
-        {/* Cover image */}
+        {/* Cover image upload */}
         <div>
-          <label>Cover image URL (optional)</label>
-          <input
-            placeholder="https://images.unsplash.com/..."
-            value={form.image}
-            onChange={e => set('image', e.target.value)}
-          />
-          {form.image && (
+          <label>Cover image</label>
+
+          {!form.image && (
             <div
-              className="image-preview"
-              style={{ backgroundImage: `url(${form.image})` }}
-            />
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                border: '2px dashed var(--border-strong)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '32px 20px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                background: 'var(--surface-2)',
+                transition: 'all .12s ease'
+              }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
+            >
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>📷</div>
+              <div style={{ fontWeight: 500, marginBottom: '4px' }}>
+                Click to choose an image
+              </div>
+              <div className="muted" style={{ fontSize: '12px' }}>
+                JPG, PNG, WEBP · max 2 MB
+              </div>
+            </div>
           )}
+
+          {form.image && (
+            <div style={{ position: 'relative', marginTop: '4px' }}>
+              <div
+                className="image-preview"
+                style={{
+                  backgroundImage: `url(${form.image})`,
+                  height: '200px'
+                }}
+              />
+              <button
+                type="button"
+                onClick={clearImage}
+                style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  background: 'rgba(0,0,0,.75)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  padding: 0,
+                  lineHeight: 1
+                }}
+                title="Remove image"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageFile}
+            style={{ display: 'none' }}
+          />
         </div>
 
         {/* Description */}
@@ -149,17 +240,11 @@ export default function CreateEvent() {
         <div className="row">
           <div style={{ flex: 2 }}>
             <label>Street</label>
-            <input
-              value={form.street}
-              onChange={e => set('street', e.target.value)}
-            />
+            <input value={form.street} onChange={e => set('street', e.target.value)} />
           </div>
           <div style={{ flex: 1 }}>
             <label>City</label>
-            <input
-              value={form.city}
-              onChange={e => set('city', e.target.value)}
-            />
+            <input value={form.city} onChange={e => set('city', e.target.value)} />
           </div>
         </div>
 
@@ -167,35 +252,22 @@ export default function CreateEvent() {
         <div className="row">
           <div style={{ flex: 1 }}>
             <label>State</label>
-            <input
-              value={form.state}
-              onChange={e => set('state', e.target.value)}
-            />
+            <input value={form.state} onChange={e => set('state', e.target.value)} />
           </div>
           <div style={{ flex: 1 }}>
             <label>PIN</label>
-            <input
-              value={form.zip}
-              onChange={e => set('zip', e.target.value)}
-            />
+            <input value={form.zip} onChange={e => set('zip', e.target.value)} />
           </div>
           <div style={{ flex: 2 }}>
             <label>Country</label>
-            <input
-              value={form.country}
-              onChange={e => set('country', e.target.value)}
-            />
+            <input value={form.country} onChange={e => set('country', e.target.value)} />
           </div>
         </div>
 
         {/* Use current location */}
         <div>
           <label>Or use current location</label>
-          <button
-            type="button"
-            className="secondary"
-            onClick={useMyLocation}
-          >
+          <button type="button" className="secondary" onClick={useMyLocation}>
             {coords
               ? `✓ ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
               : 'Use my current location'}
@@ -206,10 +278,7 @@ export default function CreateEvent() {
         <div className="row">
           <div style={{ flex: 1 }}>
             <label>Category</label>
-            <select
-              value={form.category}
-              onChange={e => set('category', e.target.value)}
-            >
+            <select value={form.category} onChange={e => set('category', e.target.value)}>
               {CATEGORIES.map(c => (
                 <option key={c} value={c}>{c}</option>
               ))}
@@ -217,21 +286,13 @@ export default function CreateEvent() {
           </div>
           <div style={{ flex: 1 }}>
             <label>Price (₹)</label>
-            <input
-              type="number"
-              min="0"
-              value={form.price}
-              onChange={e => set('price', e.target.value)}
-            />
+            <input type="number" min="0" value={form.price}
+              onChange={e => set('price', e.target.value)} />
           </div>
           <div style={{ flex: 1 }}>
             <label>Total seats</label>
-            <input
-              type="number"
-              min="1"
-              value={form.total_seats}
-              onChange={e => set('total_seats', e.target.value)}
-            />
+            <input type="number" min="1" value={form.total_seats}
+              onChange={e => set('total_seats', e.target.value)} />
           </div>
         </div>
 
@@ -239,21 +300,15 @@ export default function CreateEvent() {
         <div className="row">
           <div style={{ flex: 1 }}>
             <label>Status</label>
-            <select
-              value={form.status}
-              onChange={e => set('status', e.target.value)}
-            >
+            <select value={form.status} onChange={e => set('status', e.target.value)}>
               <option value="offline">Offline</option>
               <option value="online">Online</option>
             </select>
           </div>
           <div style={{ flex: 1 }}>
             <label>Type (optional)</label>
-            <input
-              placeholder="music, sports…"
-              value={form.type}
-              onChange={e => set('type', e.target.value)}
-            />
+            <input placeholder="music, sports…" value={form.type}
+              onChange={e => set('type', e.target.value)} />
           </div>
         </div>
 
@@ -261,19 +316,13 @@ export default function CreateEvent() {
         <div className="row">
           <div style={{ flex: 1 }}>
             <label>Starts</label>
-            <input
-              type="datetime-local"
-              value={form.startsAt}
-              onChange={e => set('startsAt', e.target.value)}
-            />
+            <input type="datetime-local" value={form.startsAt}
+              onChange={e => set('startsAt', e.target.value)} />
           </div>
           <div style={{ flex: 1 }}>
             <label>Ends</label>
-            <input
-              type="datetime-local"
-              value={form.endsAt}
-              onChange={e => set('endsAt', e.target.value)}
-            />
+            <input type="datetime-local" value={form.endsAt}
+              onChange={e => set('endsAt', e.target.value)} />
           </div>
         </div>
 

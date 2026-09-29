@@ -60,17 +60,23 @@ const eventSchema = new mongoose.Schema({
 
 eventSchema.index({ location: '2dsphere' })
 
-eventSchema.pre('save', function (next) {
+// ✅ Mongoose 9 compatible — async function, no next
+eventSchema.pre('save', async function () {
   if (this.address) {
-    const parts = [this.address.street, this.address.city, this.address.state, this.address.zip, this.address.country].filter(Boolean)
+    const parts = [
+      this.address.street,
+      this.address.city,
+      this.address.state,
+      this.address.zip,
+      this.address.country
+    ].filter(Boolean)
     this.address.full = parts.join(', ')
   }
-  if (this.location?.coordinates?.length === 2) {
+  if (Array.isArray(this.location?.coordinates) && this.location.coordinates.length === 2) {
     this.location.lng = this.location.coordinates[0]
     this.location.lat = this.location.coordinates[1]
   }
   this.paid = Number(this.price || 0) > 0
-  next()
 })
 
 const UserSchema = new mongoose.Schema({
@@ -332,6 +338,7 @@ app.post('/unfollow', authenticate, async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 // EVENT ROUTES
 // ─────────────────────────────────────────────────────────────
+
 app.post('/events', authenticate, async (req, res) => {
   try {
     const {
@@ -339,38 +346,60 @@ app.post('/events', authenticate, async (req, res) => {
       address, street, city, state, zip, country,
       lng, lat, total_seats, status, type, startsAt, endsAt
     } = req.body
-    if (!name || lng == null || lat == null || !total_seats) {
-      return res.status(400).json({ message: 'name, lng, lat, total_seats required' })
+
+    if (!name || String(name).trim() === '') {
+      return res.status(400).json({ message: 'name is required' })
     }
+    if (lng == null || isNaN(Number(lng))) {
+      return res.status(400).json({ message: 'lng is required and must be a number', received: lng })
+    }
+    if (lat == null || isNaN(Number(lat))) {
+      return res.status(400).json({ message: 'lat is required and must be a number', received: lat })
+    }
+    if (!total_seats || Number(total_seats) < 1) {
+      return res.status(400).json({ message: 'total_seats must be at least 1' })
+    }
+
     const user = await UserModel.findById(req.user.id)
     if (!user) return res.status(404).json({ message: 'user not found' })
-    const addressInput = typeof address === 'object'
+
+    const addressInput = typeof address === 'object' && address !== null
       ? address
       : { street: address || street, city, state, zip, country }
+
     const event = await eventModel.create({
-      name, description,
+      name: String(name).trim(),
+      description: description ? String(description).trim() : undefined,
       image: image || fallbackImage(name),
       category: category || 'other',
-      price: Number(price || 0),
+      price: Number(price) || 0,
       address: normalizeAddress(addressInput),
       location: {
         type: 'Point',
         coordinates: [Number(lng), Number(lat)],
-        lat: Number(lat), lng: Number(lng)
+        lat: Number(lat),
+        lng: Number(lng)
       },
-      total_seats, status, type,
-      startsAt: startsAt || undefined,
-      endsAt: endsAt || undefined,
+      total_seats: Number(total_seats),
+      status: status || 'offline',
+      type: type ? String(type).trim() : undefined,
+      startsAt: startsAt ? new Date(startsAt) : undefined,
+      endsAt: endsAt ? new Date(endsAt) : undefined,
       host: user._id,
       attendees: [user._id]
     })
+
     user.eventsHosted.push(event._id)
     user.eventsJoined.push(event._id)
     await user.save()
+
     res.status(201).json({ message: 'event created', event })
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'internal server error' })
+    console.error('EVENT CREATE ERROR:', error)
+    res.status(500).json({
+      message: 'internal server error',
+      detail: error.message
+    })
   }
 })
 
@@ -518,8 +547,8 @@ app.patch('/events/:id', authenticate, async (req, res) => {
     if (total_seats !== undefined) event.total_seats = total_seats
     if (status !== undefined) event.status = status
     if (type !== undefined) event.type = type
-    if (startsAt !== undefined) event.startsAt = startsAt
-    if (endsAt !== undefined) event.endsAt = endsAt
+    if (startsAt !== undefined) event.startsAt = startsAt ? new Date(startsAt) : undefined
+    if (endsAt !== undefined) event.endsAt = endsAt ? new Date(endsAt) : undefined
     if (address !== undefined || street !== undefined || city !== undefined) {
       const addressInput = typeof address === 'object'
         ? address : { street: address || street, city, state, zip, country }

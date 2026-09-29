@@ -740,3 +740,182 @@ button.ghost:hover:not(:disabled) { background: var(--surface-2); color: var(--t
 
 .nav-username { font-weight: 500; }
 .nav-username:hover { color: var(--text); text-decoration: none; }
+/* ═══════════════════════════════════════════════════════════
+   HAMBURGER — show only on mobile
+   ═══════════════════════════════════════════════════════════ */
+
+/* Desktop (default): hamburger aur mobile menu hidden */
+.nav-mobile { display: none; }
+.mobile-menu,
+.mobile-menu-backdrop { display: none; }
+
+/* Hamburger button */
+.hamburger {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  transition: background .15s ease;
+}
+.hamburger:hover { background: var(--surface-2); }
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform .25s ease, opacity .2s ease;
+  transform-origin: center;
+}
+.hamburger.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.hamburger.open span:nth-child(2) {
+  opacity: 0;
+}
+.hamburger.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE MENU OVERLAY
+   ═══════════════════════════════════════════════════════════ */
+.mobile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .35);
+  backdrop-filter: blur(2px);
+  z-index: 90;
+  animation: fadeIn .2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.mobile-menu {
+  position: fixed;
+  top: 56px;
+  right: 0;
+  left: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .12);
+  z-index: 100;
+  padding: 16px 20px 20px;
+  animation: slideDown .25s cubic-bezier(.2, .8, .3, 1);
+  max-height: calc(100vh - 56px);
+  overflow-y: auto;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mobile-menu-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.mobile-menu-username {
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -.01em;
+}
+.mobile-menu-sub {
+  display: inline-block;
+  font-size: 12.5px;
+  color: var(--accent);
+  margin-top: 2px;
+}
+.mobile-menu-sub:hover { text-decoration: none; color: var(--accent-hover); }
+
+.mobile-menu-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+}
+.mobile-menu-links a {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 500;
+  transition: all .12s ease;
+}
+.mobile-menu-links a:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  text-decoration: none;
+}
+.mobile-menu-links a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.mobile-menu-logout {
+  width: 100%;
+  margin-top: 12px;
+  padding: 13px;
+  background: var(--surface);
+  color: var(--danger);
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14.5px;
+  transition: all .12s ease;
+}
+.mobile-menu-logout:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SHOW HAMBURGER on mobile only
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Hide desktop nav pieces */
+  .nav-links-desktop,
+  .nav-user-desktop {
+    display: none !important;
+  }
+
+  /* Show mobile section */
+  .nav-mobile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  /* Show mobile menu when open */
+  .mobile-menu,
+  .mobile-menu-backdrop {
+    display: block;
+  }
+
+  /* Nav base styles */
+  .nav {
+    padding: 0 16px;
+    gap: 12px;
+    height: 56px;
+  }
+  .brand {
+    font-size: 15px;
+    gap: 8px;
+  }
+  .brand::before {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+  }
+}
